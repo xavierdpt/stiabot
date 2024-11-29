@@ -33,29 +33,38 @@ class QTrainer:
         self.criterion = nn.MSELoss()
 
     def train_step(self, state, action, reward, next_state, done):
+
+        # This function is called at each step and also by long memory
+
+        # state is [0] as tensor of float
         state = torch.tensor(state, dtype=torch.float)
+
+        # next_state is [0] as tensor of float
         next_state = torch.tensor(next_state, dtype=torch.float)
+
+        # the action is three numbers predicted by the model
         action = torch.tensor(action, dtype=torch.long)
+
+        # the reward is a single number
         reward = torch.tensor(reward, dtype=torch.float)
-        # (n, x)
 
         if len(state.shape) == 1:
-            # (1, x)
+            # convert stuff into [stuff]
             state = torch.unsqueeze(state, 0)
             next_state = torch.unsqueeze(next_state, 0)
             action = torch.unsqueeze(action, 0)
             reward = torch.unsqueeze(reward, 0)
             done = (done, )
 
-        # 1: predicted Q values with current state
+        # pred can contain multiple elements
         pred = self.model(state)
 
         target = pred.clone()
+
         for idx in range(len(done)):
             Q_new = reward[idx]
             if not done[idx]:
                 Q_new = reward[idx] + self.gamma * torch.max(self.model(next_state[idx]))
-
             target[idx][torch.argmax(action[idx]).item()] = Q_new
     
         # 2: Q_new = r + y * max(next_predicted Q value) -> only do this if not done
